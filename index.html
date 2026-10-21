@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>交火线 · CROSSFIRE ARENA</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🎯</text></svg>">
+<!-- three.js 随项目自带，不依赖外部 CDN（国内/越南访问更稳，离线也能跑） -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.js"
+  }
+}
+</script>
+</head>
+<body>
+
+<canvas id="gl"></canvas>
+
+<!-- ══════════ 开始菜单 ══════════ -->
+<div id="menu">
+  <div class="menuBox">
+    <h1>交火线 <em>CROSSFIRE</em></h1>
+    <p class="tag">第一人称对枪 · 支持联机 · 站定点射才准</p>
+
+    <div class="field">
+      <label>昵称</label>
+      <input id="inName" maxlength="12" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>阵营</label>
+      <div class="row">
+        <button class="pick" id="team_red"><span class="dot red"></span>红队 · 进攻</button>
+        <button class="pick" id="team_blue"><span class="dot blue"></span>蓝队 · 防守</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>配装</label>
+      <div id="loadoutList" class="loList"></div>
+    </div>
+
+    <div class="field">
+      <label>联机方式</label>
+      <div class="row">
+        <button class="pick" id="mode_solo">只打机器人</button>
+        <button class="pick" id="mode_code">连接码<small style="display:block;font-size:9px;color:#6f7d8c">中国可用</small></button>
+        <button class="pick" id="mode_fb">Firebase<small style="display:block;font-size:9px;color:#6f7d8c">需翻墙</small></button>
+      </div>
+    </div>
+
+    <div class="field" id="roomField" style="display:none">
+      <label>房间号 <small>同房间号才能碰到彼此</small></label>
+      <input id="inRoom" maxlength="24" autocomplete="off">
+    </div>
+
+    <!-- ══ 手动连接码面板 ══ -->
+    <div id="codePanel" style="display:none">
+      <div class="field">
+        <label>你的角色</label>
+        <div class="row">
+          <button class="pick" id="role_host">我开房<small style="display:block;font-size:9px;color:#6f7d8c">生成邀请码</small></button>
+          <button class="pick" id="role_guest">我加入<small style="display:block;font-size:9px;color:#6f7d8c">粘贴邀请码</small></button>
+        </div>
+      </div>
+
+      <!-- 房主流程 -->
+      <div id="hostFlow" style="display:none">
+        <div class="step">
+          <div class="stepNo">1</div>
+          <div class="stepBody">
+            <b>生成邀请码，发给朋友</b>
+            <button class="act" id="btnMakeInvite">生成邀请码</button>
+            <div class="codeOut" id="inviteOut" style="display:none">
+              <textarea id="inviteCode" readonly rows="3"></textarea>
+              <button class="act small" id="btnCopyInvite">复制，发微信给他</button>
+            </div>
+            <div class="hint" id="inviteHint"></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="stepNo">2</div>
+          <div class="stepBody">
+            <b>把他发回来的回执码粘在这里</b>
+            <textarea id="answerIn" rows="3" placeholder="粘贴对方发回来的那一段…"></textarea>
+            <button class="act" id="btnAcceptAnswer">确认连接</button>
+            <div class="hint" id="answerHint"></div>
+          </div>
+        </div>
+        <div class="hint" style="color:var(--dim)">
+          想拉第三、第四个人：重复第 1、2 步给每个人发一次。
+          他们之间会自动互联，不用再互相交换码。
+        </div>
+      </div>
+
+      <!-- 加入方流程 -->
+      <div id="guestFlow" style="display:none">
+        <div class="step">
+          <div class="stepNo">1</div>
+          <div class="stepBody">
+            <b>粘贴房主发给你的邀请码</b>
+            <textarea id="inviteIn" rows="3" placeholder="粘贴房主发来的那一段…"></textarea>
+            <button class="act" id="btnMakeAnswer">生成回执码</button>
+          </div>
+        </div>
+        <div class="step">
+          <div class="stepNo">2</div>
+          <div class="stepBody">
+            <b>把回执码发回给房主</b>
+            <div class="codeOut" id="answerOut" style="display:none">
+              <textarea id="answerCode" readonly rows="3"></textarea>
+              <button class="act small" id="btnCopyAnswer">复制，发回给房主</button>
+            </div>
+            <div class="hint" id="guestHint">他粘贴之后就连上了，这里会自动变成「已连接」。</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="peerList"></div>
+    </div>
+
+    <div class="field">
+      <label>鼠标灵敏度 <b id="sensVal">1.00</b></label>
+      <input type="range" id="inSens" min="0.2" max="3" step="0.05">
+    </div>
+
+    <div class="field">
+      <label>机器人数量 <b id="botsVal">4</b> <small>没人联机时用来凑局</small></label>
+      <input type="range" id="inBots" min="0" max="8" step="1">
+    </div>
+
+    <div class="field">
+      <label>网络缓冲 <b id="interpVal">35</b> ms
+        <small>P2P 直连下建议 20~40。调到 0 = 完全不做延迟处理，零额外延迟但会有轻微抖动</small></label>
+      <input type="range" id="inInterp" min="0" max="120" step="5">
+    </div>
+
+    <button class="start" id="btnStart">进 入 战 场</button>
+    <div id="netBadge" class="badge"></div>
+
+    <div class="keys">
+      <b>WASD</b> 移动　<b>Shift</b> 静步　<b>Ctrl</b> 蹲　<b>空格</b> 跳<br>
+      <b>左键</b> 开火　<b>右键</b> 开镜（狙）　<b>R</b> 换弹　<b>1/2/Q</b> 换枪<br>
+      <b>Tab</b> 记分板　<b>T</b> 聊天　<b>Esc</b> 释放鼠标<br>
+      <span style="color:var(--gold)">机枪要按住左键预热一秒 · 飞刀有下坠，远了往上瞄</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 本地文件协议警告 ══════════ -->
+<div id="fileWarn">
+  <div class="menuBox">
+    <h1 style="color:#ff6b5a">无法以本地文件方式运行</h1>
+    <p class="tag" style="text-align:left;line-height:2">
+      这个游戏用了 ES 模块，浏览器出于安全限制，<b>不允许双击 HTML 文件直接打开</b>。<br>
+      必须通过一个 http 服务访问。任选一种：
+    </p>
+    <div class="code">
+      <b>方法一 · 本机起个服务（推荐测试用）</b><br>
+      在这个文件夹里打开终端，运行：<br>
+      <code>python3 -m http.server 8080</code><br>
+      然后浏览器打开 <code>http://localhost:8080</code>
+    </div>
+    <div class="code">
+      <b>方法二 · GitHub Pages</b><br>
+      把整个文件夹推到 GitHub 仓库 → Settings → Pages →
+      Source 选 <code>main</code> 分支 → 保存，等一分钟即可访问。
+    </div>
+    <div class="code">
+      <b>方法三 · Firebase Hosting</b><br>
+      <code>npm i -g firebase-tools</code><br>
+      <code>firebase login</code><br>
+      <code>firebase deploy</code>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 游戏 HUD ══════════ -->
+<div id="hudRoot" style="display:none">
+
+  <div id="hitFlash"></div>
+  <div id="scopeOverlay"></div>
+
+  <!-- 准星 -->
+  <div id="crosshair">
+    <i class="ch up"></i><i class="ch down"></i><i class="ch left"></i><i class="ch right"></i>
+    <i class="chDot"></i>
+  </div>
+
+  <!-- 小地图 -->
+  <div id="miniWrap">
+    <canvas id="minimap" width="180" height="180"></canvas>
+    <div id="netInfo"></div>
+  </div>
+
+  <!-- 击杀播报 -->
+  <div id="killfeed"></div>
+
+  <!-- 左下：血量 -->
+  <div id="botLeft">
+    <div class="bars">
+      <div class="barRow">
+        <span class="lab">HP</span>
+        <div class="bar"><i id="hpBar"></i></div>
+        <b id="hp">100</b>
+      </div>
+      <div class="barRow sh">
+        <span class="lab">护盾</span>
+        <div class="bar"><i id="shBar"></i></div>
+        <b id="shield">50</b>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右下：弹药 -->
+  <div id="botRight">
+    <div id="wname">暴徒突击步枪</div>
+    <div class="ammoRow"><b id="ammo">25</b><span>/</span><i id="reserve">75</i></div>
+    <div id="reloadBar"><i></i></div>
+  </div>
+
+  <!-- 聊天 -->
+  <div id="chatlog"></div>
+  <div id="chatBox"><input id="chatInput" maxlength="120" placeholder="说点什么…（Enter 发送，Esc 取消）"></div>
+
+  <!-- 击杀提示 -->
+  <div id="killMsg">击 杀</div>
+
+  <!-- 死亡遮罩 -->
+  <div id="deadOverlay">
+    <div class="deadCard">
+      <div class="dTitle">你 被 击 倒 了</div>
+      <div class="dBy">击杀者　<b id="killerName">—</b></div>
+      <div class="dTimer"><b id="deadTimer">4.0</b> 秒后重生</div>
+    </div>
+  </div>
+
+  <!-- 暂停遮罩 -->
+  <div id="pausedOverlay">
+    <div>
+      <div class="pTitle">已释放鼠标</div>
+      <div class="pHint">点击画面任意位置继续</div>
+    </div>
+  </div>
+
+  <!-- 记分板 -->
+  <div id="scoreboard">
+    <table>
+      <thead><tr><th>玩家</th><th>击杀</th><th>死亡</th><th>K/D</th></tr></thead>
+      <tbody id="sbBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // ES 模块无法在 file:// 下加载，提前拦住并给出清晰指引
+  if (location.protocol === 'file:') {
+    document.getElementById('fileWarn').style.display = 'flex';
+    document.getElementById('menu').style.display = 'none';
+  }
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

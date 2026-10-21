@@ -1,0 +1,188 @@
+:root{
+  --ink:#e6ecf2; --dim:#8b99a8; --line:#2a3340; --panel:#121820;
+  --red:#e0564c; --blue:#3fa9d8; --gold:#e8b44a; --good:#55d18b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#0a0e13;color:var(--ink);
+  font-family:"Hiragino Sans","Noto Sans SC","PingFang SC",system-ui,sans-serif;
+  -webkit-text-size-adjust:100%;user-select:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+
+/* ═════ 菜单 ═════ */
+#menu,#fileWarn{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(120% 90% at 50% 0%,#17222e,#070a0e);z-index:50;overflow-y:auto;padding:20px}
+#fileWarn{display:none}
+.menuBox{width:100%;max-width:440px;background:var(--panel);border:1px solid var(--line);
+  padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.menuBox h1{margin:0 0 4px;font-size:27px;letter-spacing:.1em;font-weight:900}
+.menuBox h1 em{font-style:normal;color:var(--red)}
+.tag{margin:0 0 18px;font-size:12.5px;color:var(--dim);line-height:1.8}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;letter-spacing:.18em;color:var(--dim);margin-bottom:6px}
+.field label small{letter-spacing:0;opacity:.7}
+.field label b{color:var(--gold);letter-spacing:0}
+input[type=text],input:not([type]){width:100%}
+#inName,#inRoom,#chatInput{width:100%;background:#0d1319;border:1px solid var(--line);
+  color:var(--ink);padding:10px;font-family:inherit;font-size:14px}
+#inName:focus,#inRoom:focus,#chatInput:focus{outline:none;border-color:var(--gold)}
+input[type=range]{width:100%;accent-color:var(--gold)}
+.row{display:flex;gap:8px}
+button{font-family:inherit;color:var(--ink);background:#19212b;border:1px solid var(--line);
+  cursor:pointer;transition:border-color .15s,background .15s}
+button:hover:not(:disabled){border-color:var(--gold);background:#222c38}
+button:disabled{opacity:.4;cursor:not-allowed}
+.pick{flex:1;padding:11px;font-size:13.5px;font-weight:700;display:flex;align-items:center;
+  justify-content:center;gap:7px}
+.pick.sel{border-color:var(--gold);background:#2a2518}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.dot.red{background:var(--red)} .dot.blue{background:var(--blue)}
+.loList{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.lo{padding:9px;text-align:left;font-size:13px;font-weight:700}
+.lo small{display:block;font-weight:500;color:var(--dim);font-size:10px;margin-top:2px;letter-spacing:.06em}
+.lo.sel{border-color:var(--gold);background:#2a2518}
+.start{width:100%;padding:14px;margin-top:6px;background:var(--gold);color:#0d1319;
+  border-color:var(--gold);font-size:15px;font-weight:900;letter-spacing:.2em}
+.start:hover:not(:disabled){background:#f5c96b}
+.badge{margin-top:10px;font-size:11.5px;text-align:center;color:var(--dim);min-height:16px}
+.badge.ok{color:var(--good)} .badge.warn{color:var(--gold)}
+.keys{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--dim);line-height:2.1;text-align:center}
+.keys b{color:var(--ink);background:#19212b;border:1px solid var(--line);
+  padding:1px 6px;margin:0 2px;font-family:ui-monospace,Menlo,monospace;font-size:10.5px}
+.code{background:#0d1319;border:1px solid var(--line);padding:11px;margin-bottom:9px;
+  font-size:12px;line-height:1.9;color:var(--dim)}
+.code b{color:var(--ink);display:block;margin-bottom:5px}
+.code code{background:#19212b;padding:2px 6px;color:var(--gold);
+  font-family:ui-monospace,Menlo,monospace;font-size:11.5px;display:inline-block;margin:2px 0}
+
+/* ═════ HUD ═════ */
+#hudRoot{position:fixed;inset:0;pointer-events:none;z-index:10;
+  text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 10px rgba(0,0,0,.5)}
+
+#hitFlash{position:absolute;inset:0;background:radial-gradient(circle,transparent 35%,#c0211a 100%);
+  opacity:0;transition:opacity .12s}
+#scopeOverlay{position:absolute;inset:0;opacity:0;
+  background:radial-gradient(circle at 50% 50%, transparent 26%, #000 27%);
+  transition:opacity .08s}
+
+/* 准星 */
+#crosshair{position:absolute;left:50%;top:50%;width:0;height:0;--gap:4px}
+#crosshair .ch{position:absolute;background:#eafff2;box-shadow:0 0 2px rgba(0,0,0,.9);display:block}
+#crosshair .up,#crosshair .down{width:2px;height:7px;left:-1px}
+#crosshair .up{bottom:var(--gap)} #crosshair .down{top:var(--gap)}
+#crosshair .left,#crosshair .right{height:2px;width:7px;top:-1px}
+#crosshair .left{right:var(--gap)} #crosshair .right{left:var(--gap)}
+#crosshair .chDot{position:absolute;width:2px;height:2px;left:-1px;top:-1px;
+  background:#eafff2;opacity:.8}
+#crosshair.hit .ch{background:#ff5f4d;height:9px;width:2px}
+#crosshair.hit .left,#crosshair.hit .right{height:2px;width:9px}
+#crosshair.hs .ch{background:#ffd24a}
+
+/* 小地图 */
+#miniWrap{position:absolute;left:14px;top:14px}
+#minimap{width:180px;height:180px;display:block}
+#netInfo{margin-top:5px;font-size:10.5px;color:#cdd8e4;letter-spacing:.04em;
+  background:rgba(10,14,19,.7);padding:2px 7px;display:inline-block}
+
+/* 击杀播报 */
+#killfeed{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;
+  gap:3px;align-items:flex-end}
+.kfrow{background:rgba(10,14,19,.82);border:1px solid var(--line);padding:3px 9px;
+  font-size:12px;white-space:nowrap;animation:kfin .2s}
+.kfrow .k{color:var(--good)} .kfrow .v{color:var(--red)}
+.kfrow .w{color:var(--dim);margin:0 7px;font-size:11px;letter-spacing:.06em}
+@keyframes kfin{from{opacity:0;transform:translateX(16px)}}
+
+/* 左下血量 */
+#botLeft{position:absolute;left:18px;bottom:18px}
+.barRow{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.barRow .lab{font-size:10px;color:#cdd8e4;width:28px;letter-spacing:.1em;font-weight:700}
+.barRow .bar{width:150px;height:9px;background:rgba(6,9,13,.9);border:1px solid rgba(180,195,210,.35)}
+.barRow .bar i{display:block;height:100%;background:var(--good);transition:width .12s}
+.barRow.sh .bar{height:5px}
+.barRow.sh .bar i{background:var(--gold)}
+.barRow b{font-size:17px;font-weight:900;font-variant-numeric:tabular-nums;min-width:34px}
+#hpBar.low{background:var(--red)}
+
+/* 右下弹药 */
+#botRight{position:absolute;right:18px;bottom:18px;text-align:right}
+#wname{font-size:11.5px;color:#cdd8e4;letter-spacing:.14em;margin-bottom:2px;font-weight:700}
+.ammoRow{display:flex;align-items:baseline;justify-content:flex-end;gap:4px}
+.ammoRow b{font-size:34px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
+.ammoRow b.low{color:var(--red)}
+.ammoRow span{color:#9fb0c2;font-size:15px}
+.ammoRow i{font-style:normal;color:#cdd8e4;font-size:16px;font-variant-numeric:tabular-nums}
+#reloadBar{display:none;width:120px;height:4px;background:rgba(10,14,19,.8);
+  border:1px solid var(--line);margin-top:6px;margin-left:auto}
+#reloadBar i{display:block;height:100%;background:var(--gold);width:0}
+
+/* 聊天 */
+#chatlog{position:absolute;left:18px;bottom:96px;font-size:12.5px;line-height:1.8;
+  max-width:360px;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+#chatlog b{color:var(--blue)}
+#chatBox{display:none;position:absolute;left:18px;bottom:70px;width:360px;pointer-events:auto}
+
+/* 击杀提示 */
+#killMsg{position:absolute;left:50%;top:38%;transform:translateX(-50%);
+  font-size:26px;font-weight:900;letter-spacing:.4em;color:var(--gold);opacity:0;
+  text-shadow:0 3px 18px rgba(0,0,0,.9)}
+
+/* 死亡遮罩 */
+#deadOverlay{display:none;position:absolute;inset:0;background:rgba(8,10,14,.62);
+  align-items:center;justify-content:center}
+.deadCard{text-align:center}
+.dTitle{font-size:30px;font-weight:900;letter-spacing:.25em;color:var(--red);
+  text-shadow:0 4px 22px rgba(0,0,0,.9)}
+.dBy{margin-top:10px;font-size:13px;color:var(--dim)}
+.dBy b{color:var(--ink);font-size:15px}
+.dTimer{margin-top:14px;font-size:13px;color:var(--dim)}
+.dTimer b{font-size:22px;color:var(--gold);font-variant-numeric:tabular-nums}
+
+/* 暂停遮罩 */
+#pausedOverlay{display:none;position:absolute;inset:0;background:rgba(8,10,14,.72);
+  align-items:center;justify-content:center;text-align:center;pointer-events:auto;cursor:pointer}
+.pTitle{font-size:22px;font-weight:900;letter-spacing:.2em}
+.pHint{margin-top:8px;font-size:12.5px;color:var(--dim)}
+
+/* 记分板 */
+#scoreboard{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  background:rgba(10,14,19,.92);border:1px solid var(--line);padding:16px;min-width:420px}
+#scoreboard table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+#scoreboard th{text-align:right;font-size:10.5px;color:var(--dim);letter-spacing:.14em;
+  padding:5px 8px;border-bottom:1px solid var(--line);font-weight:600}
+#scoreboard th:first-child{text-align:left}
+#scoreboard td{text-align:right;padding:6px 8px;border-bottom:1px solid rgba(42,51,64,.5)}
+#scoreboard td:first-child{text-align:left}
+#scoreboard tr.me td{color:var(--gold);font-weight:800}
+#scoreboard i{font-style:normal;font-size:9.5px;color:var(--dim);
+  border:1px solid var(--line);padding:0 4px;margin-left:5px}
+#scoreboard .dot{margin-right:7px}
+
+@media (max-width:620px){
+  #minimap{width:120px;height:120px}
+  .ammoRow b{font-size:26px}
+  #scoreboard{min-width:300px}
+}
+
+/* ═════ 手动连接码面板 ═════ */
+.step{display:flex;gap:10px;margin-bottom:14px}
+.stepNo{width:22px;height:22px;flex:none;border-radius:50%;background:var(--gold);color:#0d1319;
+  font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.stepBody{flex:1;min-width:0}
+.stepBody b{display:block;font-size:12.5px;margin-bottom:6px}
+textarea{width:100%;background:#0d1319;border:1px solid var(--line);color:var(--ink);
+  padding:8px;font-family:ui-monospace,Menlo,monospace;font-size:10.5px;resize:vertical;
+  word-break:break-all;line-height:1.5}
+textarea:focus{outline:none;border-color:var(--gold)}
+textarea[readonly]{color:var(--gold);background:#11161d}
+button.act{width:100%;padding:9px;margin-top:6px;font-size:13px;font-weight:700}
+button.act.small{padding:7px;font-size:12px}
+button.act:disabled{opacity:.4}
+.codeOut{margin-top:6px}
+.hint{font-size:11px;color:var(--dim);line-height:1.7;margin-top:5px}
+.hint.ok{color:var(--good)} .hint.err{color:var(--red)} .hint.wait{color:var(--gold)}
+#peerList{margin-top:10px}
+.peerRow{display:flex;justify-content:space-between;align-items:center;
+  background:#11161d;border:1px solid var(--line);padding:7px 10px;margin-bottom:5px;font-size:12.5px}
+.peerRow b{color:var(--good)}
+.peerRow span{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}

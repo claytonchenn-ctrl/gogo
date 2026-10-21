@@ -1,0 +1,29 @@
+{
+  "rules": {
+    "rooms": {
+      "$room": {
+        ".read": "auth != null",
+        "players": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.hasChildren(['n','t','p','r','h'])"
+          }
+        },
+        "events": {
+          ".write": "auth != null",
+          "$evt": {
+            ".validate": "newData.hasChild('type') && newData.child('type').isString()"
+          }
+        },
+        "signals": {
+          "$to": {
+            ".read": "auth != null && auth.uid === $to",
+            "$sig": {
+              ".write": "auth != null"
+            }
+          }
+        }
+      }
+    }
+  }
+}
